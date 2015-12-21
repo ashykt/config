@@ -1,2 +1,12 @@
 alias ll="ls -la"
-
+alias h='history'
+alias c='clear'
+alias cls='clear;ls -F'
+alias rmbk='rm -f *~'
+alias edit='vim --split=tabedit $$args'
+alias e='edit'
+alias quicklook='qlmanage -p $$args'
+alias l=quicklook
+alias reload='vimsh ~/.vimshrc'
+alias rl=reload
+alias oo='/Applications/OpenOffice.app/Contents/MacOS/soffice '

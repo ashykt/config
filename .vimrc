@@ -10,6 +10,7 @@ set nobackup
 set nowritebackup
 set noswapfile
 set history=256
+set textwidth=0
 set confirm
 set hidden " 保存されていないファイルがあるときでも別のファイルを開ける
 set autoread " 自動で読み込みなおす
@@ -31,7 +32,7 @@ set nrformats=hex
 set suffixesadd+=.html,.css,.js,.htm,.mxml
 let mapleader = " "
 set path+=~/Documents/**
-filetype plugin indent on
+set visualbell
 " "}}}
 
 " Search "{{{
@@ -62,6 +63,16 @@ set laststatus=2
 set backspace=indent,eol,start
 set noexpandtab
 set wildmenu wildmode=list,longest,full
+set cursorline
+augroup cch
+autocmd! cch
+autocmd WinLeave * set cursorline
+autocmd WinEnter, BufRead * set cursorline
+augroup END
+:hi clear CursorLine
+:hi CursorLine gui=underline
+highlight CursorLine ctermbg=black guibg=black
+
 " "}}}
 
 
@@ -77,7 +88,24 @@ cnoremap <expr> %% getcmdtype() == ':' ? expand('%:h').'/' : '%%'
 nnoremap <Leader>rs : source ~/.vimrc<CR>
 nnoremap <Leader>re : e ~/.vimrc<CR>
 nnoremap <leader>rc :silent ! cd ~/.vim/ && git commit ~/.vim/vimrc -v <CR>
-" "}}}
+nnoremap <Esc><Esc> :nohlsearch<CR>
+" edit
+nnoremap <silent> <Space>ev :<C-u>edit $MYVIMRC<CR>
+nnoremap <silent> <Space>eg :<C-u>edit $MYGVIMRC<CR>
+nnoremap <silent> <Space>rv :<C-u>source $MYVIMRC \| if has('gui_running') \| source $MYGVIMRC \| endif <CR>
+nnoremap <silent> <Space>rg :<C-u>source $MYGVIMRC<CR>
+augroup MyAutoCmd
+    autocmd!
+augroup END
+
+if !has('gui_running') && !(has('win32') || has('win64'))
+    autocmd MyAutoCmd BufWritePost $MYVIMRC nested source $MYVIMRC
+else
+    autocmd MyAutoCmd BufWritePost $MYVIMRC source $MYVIMRC |
+                \if has('gui_running') | source $MYGVIMRC
+    autocmd MyAutoCmd BufWritePost $MYGVIMRC if has('gui_running') | source $MYGVIMRC
+endif
+"}}}
 
 
 " Insert Mode "{{{
@@ -107,7 +135,7 @@ filetype off
 if has('vim_starting')
   set runtimepath+=~/.vim/bundle/neobundle.vim/
 endif
-call neobundle#rc(expand('~/.vim/bundle/'))
+call neobundle#begin(expand('~/.vim/bundle/'))
 NeoBundleFetch 'Shougo/neobundle.vim'
 NeoBundle 'Shougo/vimproc', {
   \ 'build' : {
@@ -118,20 +146,21 @@ NeoBundle 'Shougo/vimproc', {
   \ },
   \ }
 NeoBundle 'Shougo/vimproc.vim',{'build':{'cygwin': 'make -f make_cygwin.mak'}}
+filetype plugin indent on
 NeoBundleCheck
 " "}}}
 
 
 " Shell "{{{
 NeoBundle 'Shougo/vimshell'
-nnoremap <silent> ,is :VimShell<CR>
-nnoremap <silent> ,isy :VimShellInteractive python<CR>
+nnoremap <silent> ,vs :VimShell<CR>
+nnoremap <silent> ,vsy :VimShellInteractive python<CR>
 " "}}}
 
 
 " Colors "{{{
+hi Visual  guifg=#000000 guibg=#FFFFFF gui=none
 NeoBundle 'itchyny/landscape.vim'
-colorscheme landscape
 let g:Powerline_theme = 'landscape'
 let g:Powerline_colorscheme = 'landscape'
 let g:airline_theme = 'landscape'
@@ -202,7 +231,7 @@ inoremap <expr><BS> neocomplcache#smart_close_popup()."\<C-h>"
 inoremap <expr><C-y>  neocomplcache#close_popup()
 inoremap <expr><C-e>  neocomplcache#cancel_popup()
 autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
-autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+"autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
 autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
 autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
 autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
@@ -227,6 +256,8 @@ smap <expr><TAB> neosnippet#expandable_or_jumpable() ?
 if has('conceal')
 	  set conceallevel=2 concealcursor=i
 endif
+NeoBundle 'violetyk/neocomplete-php.vim'
+let g:neocomplete_php_locale = 'ja'
 " "}}}
 
 " Exec "{{{
@@ -251,7 +282,7 @@ let g:airline#extensions#whitespace#enabled = 0
 
 " Programing "{{{
 NeoBundle 'szw/vim-tags' " ctags (Ex. ctags -R -f .webapps_trunk
-"set tags=~/tags1,~/tags2
+set tags=~/cv/.cv_tags
 NeoBundle 'taglist.vim' "see varible, method 
 let g:tlist_javascript_settings = 'javascript;c:class;m:method;f:function;p:property'
 NeoBundle 'mattn/emmet-vim' "html coding -> http://motw.mods.jp/Vim/emmet-vim.html
@@ -275,39 +306,71 @@ augroup EmmitVim
 	autocmd!
 	autocmd FileType * let g:user_emmet_settings.indentation = '               '[:&tabstop]
 augroup END
-NeoBundle 'taichouchou2/surround.vim'
+"NeoBundle 'taichouchou2/surround.vim'
 NeoBundle 'vim-scripts/java.vim'
 "NeoBundle 'vim-scripts/javacomplete'
 "NeoBundle 'vim-scripts/jcommenter.vim'
 "NeoBundle 'vim-scripts/java_checkstyle.vim'
+" PHP 
+let php_sql_query = 1
+let php_baselib = 1
+let php_htmlInStrings = 1
+let php_noShortTags = 1
+let php_parent_error_close = 1
+let g:sql_type_default='mysql'
+" vim-php-cs-fixer {{{
+NeoBundleLazy 'stephpy/vim-php-cs-fixer', {
+\    'autoload' : {
+\        'filetypes': 'php',},}
+let s:hooks = neobundle#get_hooks('vim-php-cs-fixer')
+function! s:hooks.on_source(bundle)
+    let g:php_cs_fixer_path = '$HOME/.vim/phpCsFixer/php-cs-fixer' " define the path to the php-cs-fixer.phar
+    let g:php_cs_fixer_level='all'              " which level ?
+    let g:php_cs_fixer_config='default'         " configuration
+    let g:php_cs_fixer_php_path='php'           " Path to PHP
+    " If you want to define specific fixers:
+    "let g:php_cs_fixer_fixers_list = 'linefeed,short_tag,indentation'
+    let g:php_cs_fixer_enable_default_mapping=1 " Enable the mapping by default (<leader>pcd)
+    let g:php_cs_fixer_dry_run=0                " Call command with dry-run option
+    let g:php_cs_fixer_verbose=0                " Return the output of command if 1, else an inline information.
+    nnoremap <Leader>php :call PhpCsFixerFixFile()<CR>
+endfunction
+unlet s:hooks
+"}}}
+
 " "}}}
 
+" vim-ref {{{
+NeoBundle 'thinca/vim-ref'
+let g:ref_cache_dir=$HOME.'/.vim/vim-ref/cache'
+let g:ref_phpmanual_path=$HOME.'/.vim/vim-ref/php-chunked-xhtml'
+"}}}
 
 " Syntax "{{{
 NeoBundle 'hail2u/vim-css3-syntax'
-NeoBundle 'taichouchou2/vim-javascript'
+"NeoBundle 'taichouchou2/vim-javascript'
 "NeoBundleLazy 'jelera/vim-javascript-syntax', {'autoload':{'filetypes':['javascript']}}
-NeoBundle 'taichouchou2/html5.vim'
-syn keyword htmlTagName contained article aside audio bb canvas command
-syn keyword htmlTagName contained datalist details dialog embed figure
-syn keyword htmlTagName contained header hgroup keygen mark meter nav output
-syn keyword htmlTagName contained progress time ruby rt rp section time
-syn keyword htmlTagName contained source figcaption
-syn keyword htmlArg contained autofocus autocomplete placeholder min max
-syn keyword htmlArg contained contenteditable contextmenu draggable hidden
-syn keyword htmlArg contained itemprop list sandbox subject spellcheck
-syn keyword htmlArg contained novalidate seamless pattern formtarget
-syn keyword htmlArg contained formaction formenctype formmethod
-syn keyword htmlArg contained sizes scoped async reversed sandbox srcdoc
-syn keyword htmlArg contained hidden role
-syn match   htmlArg "\<\(aria-[\-a-zA-Z0-9_]\+\)=" contained
-syn match   htmlArg contained "\s*data-[-a-zA-Z0-9_]\+"
+"NeoBundle 'taichouchou2/html5.vim'
+"syn keyword htmlTagName contained article aside audio bb canvas command
+"syn keyword htmlTagName contained datalist details dialog embed figure
+"syn keyword htmlTagName contained header hgroup keygen mark meter nav output
+"syn keyword htmlTagName contained progress time ruby rt rp section time
+"syn keyword htmlTagName contained source figcaption
+"syn keyword htmlArg contained autofocus autocomplete placeholder min max
+"syn keyword htmlArg contained contenteditable contextmenu draggable hidden
+"syn keyword htmlArg contained itemprop list sandbox subject spellcheck
+"syn keyword htmlArg contained novalidate seamless pattern formtarget
+"syn keyword htmlArg contained formaction formenctype formmethod
+"syn keyword htmlArg contained sizes scoped async reversed sandbox srcdoc
+"syn keyword htmlArg contained hidden role
+"syn match   htmlArg "\<\(aria-[\-a-zA-Z0-9_]\+\)=" contained
+"syn match   htmlArg contained "\s*data-[-a-zA-Z0-9_]\+"
 " "}}}
 
 " Web tools "{{{
-NeoBundle 'open-brouwser.vim'
-nmap <Leader>o <Plug>(openbrowser-open)
-vmap <Leader>o <Plug>(openbrowser-open)
+"NeoBundle 'open-brouwser.vim'
+"nmap <Leader>o <Plug>(openbrowser-open)
+"vmap <Leader>o <Plug>(openbrowser-open)
 " "}}}
 
 
@@ -315,6 +378,7 @@ vmap <Leader>o <Plug>(openbrowser-open)
 NeoBundle 'tpope/vim-fugitive.git'
 NeoBundle 'vim-scripts/vcscommand.vim'
 " "}}}
+call neobundle#end()
 
 
 filetype on

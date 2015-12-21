@@ -1,11 +1,10 @@
-" GUI {{{
-set transparency=10
-set lines=48
-set columns=100
-set noimdisableactivate
-set imdisable
-set undodir=~/.undodir
-colorscheme molokai
-syntax on
-
-" "}}}
+if has('gui_macvim')
+	syntax on
+	set noimdisableactivate
+	set imdisable
+	set lines=50
+	set columns=100
+	colorscheme landscape
+	colorscheme molokai
+	hi Visual  guifg=#000000 guibg=#FFFFFF gui=none
+endif
